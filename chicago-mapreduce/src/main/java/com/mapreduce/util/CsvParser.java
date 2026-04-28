@@ -12,14 +12,18 @@ public class CsvParser {
     }
 
     // Column indices for chicago_sensor_sample.csv
-    public static final int MEASUREMENT_TITLE    = 0;
-    public static final int MEASUREMENT_TYPE     = 2;
-    public static final int MEASUREMENT_MEDIUM   = 3;
-    public static final int MEASUREMENT_TIME     = 4;
-    public static final int MEASUREMENT_VALUE    = 5;
-    public static final int UNITS                = 6;
-    public static final int DATA_STREAM_ID       = 9;
-    public static final int RESOURCE_ID          = 10;
-    public static final int LATITUDE             = 13;
-    public static final int LONGITUDE            = 14;
+    public static final int MEASUREMENT_TITLE   = 0;
+    public static final int MEASUREMENT_TYPE    = 1;  
+    public static final int MEASUREMENT_MEDIUM  = 2;  
+    public static final int MEASUREMENT_TIME    = 3;  
+    public static final int MEASUREMENT_VALUE   = 4;  
+    public static final int UNITS               = 5;  
+    public static final int UNITS_ABBREVIATION  = 6;
+    public static final int MEASUREMENT_PERIOD  = 7;
+    public static final int DATA_STREAM_ID      = 8;
+    public static final int RESOURCE_ID         = 9;
+    public static final int MEASUREMENT_ID      = 10;
+    public static final int RECORD_ID           = 11;
+    public static final int LATITUDE            = 12; 
+    public static final int LONGITUDE           = 13; 
 } 
