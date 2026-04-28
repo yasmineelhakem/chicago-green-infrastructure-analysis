@@ -1,27 +1,29 @@
-import requests
 import pandas as pd
+from sodapy import Socrata
 
-url = "https://data.cityofchicago.org/api/v3/views/ggws-77ih/query.json"
+APP_TOKEN = "yuheXUQbJk5vPTYhaVcQYkEG8"
 
-limit = 50000
+client = Socrata("data.cityofchicago.org", APP_TOKEN, timeout=120)
+
+# Grab just 500k rows to start
+chunk_size = 50000
 offset = 0
+all_records = []
+target = 500_000
 
-all_data = []
+while offset < target:
+    print(f"Fetching {offset:,} / {target:,}...")
+    results = client.get("ggws-77ih", limit=chunk_size, offset=offset)
 
-while True:
-    params = {
-        "$limit": limit,
-        "$offset": offset
-    }
-
-    response = requests.get(url, params=params)
-    data = response.json()
-
-    if not data:
+    if not results:
         break
 
-    all_data.extend(data)
-    offset += limit
+    all_records.extend(results)
+    offset += chunk_size
 
-df = pd.DataFrame(all_data)
-df.to_csv("../data/chicago_sensor_data.csv", index=False)
+    if len(results) < chunk_size:
+        break
+
+df = pd.DataFrame.from_records(all_records)
+df.to_csv("../data/chicago_sensor_sample.csv", index=False)
+print(f"Done {len(df):,} rows, {df.shape[1]} columns")
