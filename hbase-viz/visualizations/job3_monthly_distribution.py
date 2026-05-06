@@ -1,32 +1,100 @@
 import matplotlib
 matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
+import sys
 
-monthly_data = pd.DataFrame({
-    'Month': ['2018-03'] * 5 + ['2018-04'] * 5,
-    'Sensor': [
-        'CumulativePrecipitation', 'DifferentialPressure',
-        'SoilMoisture', 'WindDirection', 'WindSpeed'
-    ] * 2,
-    'Count': [
-        5016, 10032, 9882, 5016, 10032,
-        21509, 43020, 42359, 21511, 43020
-    ]
-})
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from hbase.hbase_reader import connect_hbase, read_monthly
 
-pivot = monthly_data.pivot(index='Month', columns='Sensor', values='Count')
 
-fig, ax = plt.subplots(figsize=(10, 6))
-pivot.plot(kind='bar', ax=ax, colormap='tab10', edgecolor='white', linewidth=0.5)
+# create output directory
+os.makedirs("viz-results", exist_ok=True)
 
-ax.set_title('Job 3 — Monthly Valid Measurements per Sensor', fontsize=13, fontweight='bold')
-ax.set_xlabel('Month')
-ax.set_ylabel('Number of Valid Measurements')
-ax.tick_params(axis='x', rotation=0)
-ax.legend(title='Sensor Type', bbox_to_anchor=(1.05, 1), loc='upper left')
+# connect to HBase
+connection = connect_hbase()
+
+# read monthly data
+df = read_monthly(connection)
+
+print("Job 3 data from HBase:")
+print(df)
+
+
+pivot = df.pivot(index="Month", columns="Sensor", values="Count")
+
+fig, axes = plt.subplots(1, 2, figsize=(16,6))
+
+
+# Grouped bar chart
+pivot.plot(
+    kind="bar",
+    ax=axes[0],
+    colormap="tab10",
+    edgecolor="white",
+    linewidth=0.5
+)
+
+axes[0].set_title(
+    "Monthly Valid Measurements per Sensor\n(Read from HBase)",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[0].set_xlabel("Month")
+axes[0].set_ylabel("Number of Valid Measurements")
+axes[0].tick_params(axis="x", rotation=0)
+
+axes[0].legend(
+    title="Sensor",
+    bbox_to_anchor=(1.05, 1),
+    loc="upper left",
+    fontsize=8
+)
+
+
+# Line chart: evolution over time
+for sensor in pivot.columns:
+    axes[1].plot(
+        pivot.index,
+        pivot[sensor],
+        marker="o",
+        linewidth=2,
+        markersize=8,
+        label=sensor
+    )
+
+axes[1].set_title(
+    "Sensor Activity Evolution\nMarch → April 2018",
+    fontsize=12,
+    fontweight="bold"
+)
+
+axes[1].set_xlabel("Month")
+axes[1].set_ylabel("Measurement Count")
+
+axes[1].legend(
+    title="Sensor",
+    bbox_to_anchor=(1.05, 1),
+    loc="upper left",
+    fontsize=8
+)
+
+axes[1].grid(True, alpha=0.3)
+
 
 plt.tight_layout()
-plt.savefig('viz-results/job3_monthly_distribution.png', dpi=150, bbox_inches='tight')
+
+plt.savefig(
+    "viz-results/job3_monthly_distribution.png",
+    dpi=150,
+    bbox_inches="tight"
+)
+
 print("Saved: job3_monthly_distribution.png")
+
 plt.close()
+
+connection.close()

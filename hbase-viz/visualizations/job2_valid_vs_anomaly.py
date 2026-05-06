@@ -1,34 +1,83 @@
 import matplotlib
 matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
-import pandas as pd
+import numpy as np
+import os
+import sys
 
-anomaly_data = pd.DataFrame({
-    'Sensor': [
-        'DifferentialPressure', 'SoilMoisture', 'CumulativePrecipitation',
-        'Temperature', 'RelativeHumidity', 'WindSpeed', 'WindDirection'
-    ],
-    'VALID':   [53052, 52241, 26525,      0,     0,     0, 26527],
-    'ANOMALY': [    0, 91138, 26527, 144191, 26527, 53052,     0]
-})
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from hbase.hbase_reader import connect_hbase, read_anomalies
 
-x = range(len(anomaly_data))
-width = 0.4
 
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.bar([i - width/2 for i in x], anomaly_data['VALID'],
-       width, label='VALID', color='#4CAF50', edgecolor='white')
-ax.bar([i + width/2 for i in x], anomaly_data['ANOMALY'],
-       width, label='ANOMALY', color='#F44336', edgecolor='white')
+# create output directory
+os.makedirs("viz-results", exist_ok=True)
 
-ax.set_title('Job 2 — Valid vs Anomaly Count per Sensor', fontsize=13, fontweight='bold')
-ax.set_xlabel('Sensor Type')
-ax.set_ylabel('Count')
-ax.set_xticks(list(x))
-ax.set_xticklabels(anomaly_data['Sensor'], rotation=20, ha='right')
-ax.legend()
+# connect to HBase
+connection = connect_hbase()
+
+# read anomaly data
+df = read_anomalies(connection)
+
+print("Job 2 data from HBase:")
+print(df)
+
+x = np.arange(len(df))
+width = 0.35
+
+fig, axes = plt.subplots(1, 2, figsize=(16,6))
+
+
+# Grouped bar chart
+axes[0].bar(x - width/2, df['VALID'], width,
+            label='VALID',
+            color='#4CAF50',
+            edgecolor='white')
+
+axes[0].bar(x + width/2, df['ANOMALY'], width,
+            label='ANOMALY',
+            color='#F44336',
+            edgecolor='white')
+
+axes[0].set_title("Valid vs Anomaly Count per Sensor\n(Read from HBase)",
+                  fontsize=12, fontweight="bold")
+
+axes[0].set_xticks(x)
+axes[0].set_xticklabels(df['Sensor'], rotation=25, ha='right')
+axes[0].set_ylabel("Count")
+axes[0].legend()
+
+
+# Pie chart (global anomaly percentage)
+total_valid = df['VALID'].sum()
+total_anomaly = df['ANOMALY'].sum()
+
+axes[1].pie(
+    [total_valid, total_anomaly],
+    labels=["VALID", "ANOMALY"],
+    colors=["#4CAF50", "#F44336"],
+    autopct="%1.1f%%",
+    startangle=90,
+    explode=(0,0.05)
+)
+
+axes[1].set_title(
+    "Global Data Quality (All Sensors)",
+    fontsize=12,
+    fontweight="bold"
+)
+
 
 plt.tight_layout()
-plt.savefig('viz-results/job2_valid_vs_anomaly.png', dpi=150, bbox_inches='tight')
-print("Saved: job2_valid_vs_anomaly.png")
+
+plt.savefig(
+    "viz-results/job2_anomaly_analysis.png",
+    dpi=150,
+    bbox_inches="tight"
+)
+
+print("Saved: job2_anomaly_analysis.png")
+
 plt.close()
+
+connection.close()

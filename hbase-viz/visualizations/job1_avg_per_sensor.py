@@ -1,28 +1,26 @@
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import pandas as pd
+import os
+import sys
 
-avg_data = pd.DataFrame({
-    'Sensor': [
-        'DifferentialPressure\n(pascals)',
-        'SoilMoisture\n(%)',
-        'CumulativePrecipitation\n(inches)',
-        'AtmosphericPressure\n(pascals)'
-    ],
-    'Average': [54793.98, 38.14, 8.87, 99628.52]
-})
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from hbase.hbase_reader import connect_hbase, read_averages
 
-colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0']
+os.makedirs('viz-results', exist_ok=True)
 
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.bar(avg_data['Sensor'], avg_data['Average'], color=colors, edgecolor='white', linewidth=0.8)
-ax.set_title('Job 1 — Average Value per Sensor Type', fontsize=13, fontweight='bold')
+connection = connect_hbase()
+df = read_averages(connection)
+
+fig, ax = plt.subplots(figsize=(10,6))
+
+bars = ax.bar(df['Sensor'], df['Average'])
+
+ax.set_title('Average Value per Sensor Type')
 ax.set_xlabel('Sensor Type')
 ax.set_ylabel('Average Value')
-ax.tick_params(axis='x', rotation=15)
 
 plt.tight_layout()
-plt.savefig('viz-results/job1_avg_per_sensor.png', dpi=150, bbox_inches='tight')
-print("Saved: job1_avg_per_sensor.png")
-plt.close()
+plt.savefig('viz-results/job1_avg_per_sensor.png', dpi=150)
+
+connection.close()
