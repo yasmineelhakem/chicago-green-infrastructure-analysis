@@ -11,9 +11,11 @@ import java.util.Set;
 
 public class AvgByTypeMapper extends Mapper<Object, Text, Text, DoubleWritable> {
 
+    // output variables
     private Text sensorType = new Text();
     private DoubleWritable value = new DoubleWritable();
 
+    // valid sensors
     private static final Set<String> VALID_TYPES = new HashSet<>(Arrays.asList(
         "CumulativePrecipitation",
         "SoilMoisture",
@@ -23,7 +25,7 @@ public class AvgByTypeMapper extends Mapper<Object, Text, Text, DoubleWritable> 
         // WindSpeed / WindDirection: all 0.0 in this sample → broken sensor
     ));
 
-    // Unit strings that indicate raw/uncalibrated signal — not physical measurements
+    // Unit strings that indicate raw/uncalibrated signal not physical measurements
     private static final Set<String> INVALID_UNITS = new HashSet<>(Arrays.asList(
         "millivolts",
         "count",
@@ -34,13 +36,17 @@ public class AvgByTypeMapper extends Mapper<Object, Text, Text, DoubleWritable> 
     public void map(Object key, Text line, Context context)
             throws IOException, InterruptedException {
 
+        // read the line
         String row = line.toString().trim();
+        // skip header and empty lines
         if (row.startsWith("measurement_title") || row.isEmpty()) return;
 
+        // split the line into columns
         String[] fields = CsvParser.parse(row);
         if (fields.length <= CsvParser.UNITS) return;
 
         try {
+            // extract relevant fields
             String title = fields[CsvParser.MEASUREMENT_TITLE].trim().replace("\"", "");
             String type  = fields[CsvParser.MEASUREMENT_TYPE].trim().replace("\"", "");
             String unit  = fields[CsvParser.UNITS].trim().replace("\"", "").toLowerCase();
@@ -67,7 +73,7 @@ public class AvgByTypeMapper extends Mapper<Object, Text, Text, DoubleWritable> 
                 return;
             }
 
-            // Sanity bounds for remaining types
+            // Humidity cannot exceed 100%
             if (type.equals("RelativeHumidity") && val > 100) return;
 
             // Emit: key = "SensorType (unit)", value = measurement

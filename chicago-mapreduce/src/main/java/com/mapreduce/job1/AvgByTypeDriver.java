@@ -18,7 +18,9 @@ public class AvgByTypeDriver {
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "Average Value per Sensor Type");
 
+        // tells hadoop where the compiled code is 
         job.setJarByClass(AvgByTypeDriver.class);
+        
         job.setMapperClass(AvgByTypeMapper.class);
         job.setReducerClass(AvgByTypeReducer.class);
 

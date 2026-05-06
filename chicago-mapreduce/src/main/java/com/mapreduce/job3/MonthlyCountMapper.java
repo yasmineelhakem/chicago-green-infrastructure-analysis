@@ -31,12 +31,11 @@ public class MonthlyCountMapper extends Mapper<Object, Text, Text, IntWritable> 
             if (val < 0) return;
             if (unit.equals("millivolts") || unit.equals("count")) return;
 
-            // Extraire "YYYY-MM" depuis le timestamp
-            // Ex: "2024-03-15T10:30:00" → "2024-03"
+            // Extraire "YYYY-MM" depuis le timestamp "2024-03-15T10:30:00" → "2024-03"
             if (timestamp.length() < 7) return;
             String month = timestamp.substring(0, 7); // "YYYY-MM"
 
-            // Clé : "2024-03|SoilMoisture"
+            // Key : "2024-03|SoilMoisture"
             yearMonth.set(month + "|" + type);
             context.write(yearMonth, ONE);
 

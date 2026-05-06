@@ -23,6 +23,7 @@ public class AvgByTypeSpark {
 
     public static void main(String[] args) {
 
+        // create spark config
         SparkConf conf = new SparkConf()
             .setAppName("AvgByType-Spark");
 
