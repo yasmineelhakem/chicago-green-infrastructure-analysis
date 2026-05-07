@@ -61,6 +61,8 @@ These measurements allow analysis of environmental conditions and detection of a
 
 3. **Upload to HDFS**:
    ```bash
+   hdfs dfs -mkdir /chicago_sensors/
+
    # Connect to cluster and upload
    hdfs dfs -put chicago_sensor_sample.csv /chicago_sensors/
    
@@ -86,7 +88,7 @@ The process follows these steps:
 - Compute the sum and count of values per sensor type.
 - Calculate the final average.
 
-## Execution
+### Execution
 
 1. **Build the MapReduce module**:
    ```bash
@@ -109,9 +111,17 @@ The process follows these steps:
 4. **View the results**:
    ```bash
    hdfs dfs -cat /chicago_sensors/output_job1/part-r-00000
+   hdfs dfs -cat /chicago_sensors/output_job1/part-r-00001
    ```
 
-This job produces results such as:
+### Output
+
+```
+CumulativePrecipitation (inches)        8.865625259188919
+SoilMoisture (percent volumetric water content) 38.13522613655989
+AtmosphericPressure (pascals)   99628.52101790764
+DifferentialPressure (pascals)  9962.839031929732
+```
 
 ## Job 2 — Anomaly Detection
 
@@ -130,7 +140,35 @@ Each record is classified as either:
 
 The system counts the number of valid and anomalous measurements for each sensor type.
 
-Example output:
+### Execution
+
+```bash
+hadoop jar chicago-mapreduce.jar com.mapreduce.job2.AnomalyDriver \
+  /chicago_sensors/chicago_sensor_sample.csv \
+  /chicago_sensors/output_job2
+```
+
+### View Results
+
+```bash
+hdfs dfs -cat /chicago_sensors/output_job2/part-r-00000
+hdfs dfs -cat /chicago_sensors/output_job2/part-r-00001
+```
+
+### Output
+
+```
+CumulativePrecipitation|ANOMALY 26527
+SoilMoisture|VALID      52241
+Temperature|ANOMALY     144191
+TimeWindowBoundary|VALID        220
+WindDirection|VALID     26527
+CumulativePrecipitation|VALID   26525
+DifferentialPressure|VALID      53052
+RelativeHumidity|ANOMALY        26527
+SoilMoisture|ANOMALY    91138
+WindSpeed|ANOMALY       53052
+```
 
 This allows quick identification of problematic sensors or corrupted measurements.
 
@@ -145,7 +183,40 @@ For each measurement:
 - Measurements are grouped by **month and sensor type**.
 - The total number of measurements is counted.
 
-Example result:
+### Execution
+
+```bash
+hadoop jar chicago-mapreduce.jar com.mapreduce.job3.MonthlyCountDriver \
+  /chicago_sensors/chicago_sensor_sample.csv \
+  /chicago_sensors/output_job3
+```
+
+### View Results
+
+```bash
+hdfs dfs -cat /chicago_sensors/output_job3/part-r-00000
+hdfs dfs -cat /chicago_sensors/output_job3/part-r-00001
+```
+
+### Output
+
+```
+2018-03|CumulativePrecipitation 5016
+2018-03|DifferentialPressure    10032
+2018-03|SoilMoisture    9882
+2018-03|TimeWindowBoundary      21
+2018-03|WindDirection   5016
+2018-03|WindSpeed       10032
+
+2018-04|CumulativePrecipitation 21509
+2018-04|DifferentialPressure    43020
+2018-04|SoilMoisture    42359
+2018-04|TimeWindowBoundary      180
+2018-04|WindDirection   21511
+2018-04|WindSpeed       43020
+
+2018-05|TimeWindowBoundary      19
+```
 
 This provides insights into sensor activity and seasonal variations.
 
@@ -169,6 +240,8 @@ All three jobs produce results compatible with HBase storage.
 
 ## Execution
 
+### Setup
+
 1. **Build the Spark module**:
    ```bash
    cd chicago-spark
@@ -177,19 +250,74 @@ All three jobs produce results compatible with HBase storage.
 
 2. **Copy the JAR to the cluster**:
    ```bash
-   docker cp target/chicago-spark-1.0-SNAPSHOT-SPARK.jar hadoop-master:/root/chicago-spark.jar
+   docker cp target/chicago-spark-1.0-SNAPSHOT.jar hadoop-master:/root/chicago-spark.jar
    ```
 
-3. **Run Job 1 with Spark**:
-   ```bash
-   spark-submit --class com.spark.job1.AvgByTypeSpark \
-     --master local[*] \
-     /root/chicago-spark.jar \
-     /chicago_sensors/chicago_sensor_sample.csv \
-     /chicago_sensors/spark_output_job1
-   ```
+### Job 1: Average per Sensor Type
 
-4. **Run additional jobs** (Job 2 and Job 3) by replacing the class name and output paths accordingly.
+```bash
+spark-submit --class com.spark.job1.AvgByTypeSpark \
+  --master local[*] \
+  /root/chicago-spark.jar \
+  /chicago_sensors/chicago_sensor_sample.csv \
+  /chicago_sensors/spark_output_job1
+```
+
+**Output:**
+```
+(DifferentialPressure (pascals),54793.98987785569)
+(SoilMoisture (percent volumetric water content),38.13522613656062)
+(CumulativePrecipitation (inches),8.865625259189539)
+```
+
+### Job 2: Anomaly Detection
+
+```bash
+spark-submit --class com.spark.job2.AnomalyDetectionSpark \
+  --master local[*] \
+  /root/chicago-spark.jar \
+  /chicago_sensors/chicago_sensor_sample.csv \
+  /chicago_sensors/spark_output_job2
+```
+
+**Output:**
+```
+(DifferentialPressure|VALID,53052)
+(WindSpeed|ANOMALY,53052)
+(SoilMoisture|ANOMALY,91138)
+(RelativeHumidity|ANOMALY,26527)
+(CumulativePrecipitation|VALID,26525)
+(SoilMoisture|VALID,52241)
+(WindDirection|VALID,26527)
+(CumulativePrecipitation|ANOMALY,26527)
+(Temperature|ANOMALY,144191)
+(TimeWindowBoundary|VALID,220)
+```
+
+### Job 3: Monthly Distribution
+
+```bash
+spark-submit --class com.spark.job3.MonthlyCountSpark \
+  --master local[*] \
+  /root/chicago-spark.jar \
+  /chicago_sensors/chicago_sensor_sample.csv \
+  /chicago_sensors/spark_output_job3
+```
+
+**Output:**
+```
+(2018-03|CumulativePrecipitation,5016)
+(2018-03|DifferentialPressure,10032)
+(2018-03|SoilMoisture,9882)
+(2018-03|WindDirection,5016)
+(2018-03|WindSpeed,10032)
+
+(2018-04|CumulativePrecipitation,21509)
+(2018-04|DifferentialPressure,43020)
+(2018-04|SoilMoisture,42359)
+(2018-04|WindDirection,21511)
+(2018-04|WindSpeed,43020)
+```
 
 # Data Storage with HBase
 

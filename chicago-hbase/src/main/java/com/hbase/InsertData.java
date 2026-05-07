@@ -21,10 +21,10 @@ public class InsertData {
 
             // job 1 : Averages
             System.out.println("Inserting Job 1 data (Averages)...");
-            insertAvg("AtmosphericPressure",     "99628.52");
-            insertAvg("DifferentialPressure",    "9962.84");
-            insertAvg("SoilMoisture",            "38.135");
-            insertAvg("CumulativePrecipitation", "8.865");
+            insertAvg("AtmosphericPressure",     "99628.52101790764");
+            insertAvg("DifferentialPressure",    "9962.839031929732");
+            insertAvg("SoilMoisture",            "38.13522613655989");
+            insertAvg("CumulativePrecipitation", "8.865625259188919");
 
             // job 2 : Anomalies
             System.out.println("Inserting Job 2 data (Anomalies)...");
@@ -37,19 +37,23 @@ public class InsertData {
             insertAnomaly("Temperature",             "ANOMALY", "144191");
             insertAnomaly("RelativeHumidity",        "ANOMALY", "26527");
             insertAnomaly("WindSpeed",               "ANOMALY", "53052");
+            insertAnomaly("TimeWindowBoundary",      "VALID",   "220");
 
             // job 3 : Monthly
             System.out.println("Inserting Job 3 data (Monthly)...");
             insertMonthly("2018-03", "CumulativePrecipitation", "5016");
             insertMonthly("2018-03", "DifferentialPressure",    "10032");
             insertMonthly("2018-03", "SoilMoisture",            "9882");
+            insertMonthly("2018-03", "TimeWindowBoundary",      "21");
             insertMonthly("2018-03", "WindDirection",            "5016");
             insertMonthly("2018-03", "WindSpeed",               "10032");
             insertMonthly("2018-04", "CumulativePrecipitation", "21509");
             insertMonthly("2018-04", "DifferentialPressure",    "43020");
             insertMonthly("2018-04", "SoilMoisture",            "42359");
+            insertMonthly("2018-04", "TimeWindowBoundary",      "180");
             insertMonthly("2018-04", "WindDirection",            "21511");
             insertMonthly("2018-04", "WindSpeed",               "43020");
+            insertMonthly("2018-05", "TimeWindowBoundary",      "19");
 
             System.out.println("All data inserted successfully!");
             table.close();
